@@ -19,17 +19,27 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
+        // H2 Console은 iframe으로 동작한다. Security는 iframe을 차단하기 때문에 H2 Console을 확인하려면 설정 필요
+        http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
+
+        // CSRF Filter
         http.csrf(configure -> configure.disable());
 
+        // Username Password Authentication Filter
         http.formLogin(form -> form
-                .loginPage("/login-form")
-                .loginProcessingUrl("/login") // username=ssar&password=1234
-                .defaultSuccessUrl("/main")
+                        .loginPage("/login-form")
+//                .usernameParameter("email")
+                        .loginProcessingUrl("/login") // username=ssar&password=1234
+                        .defaultSuccessUrl("/main")
         );
 
+        // Aware Filter
+        // /main 인증이 필요해, /admin ADMIN 권한이 필요해, /user USER 권한이 필요해
         http.authorizeHttpRequests(
                 authorize -> authorize
-                        .requestMatchers("/user/**", "/main").authenticated()
+                        .requestMatchers("/main").authenticated()
+                        .requestMatchers("/user/**").hasRole("USER")
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().permitAll()
         );
 
